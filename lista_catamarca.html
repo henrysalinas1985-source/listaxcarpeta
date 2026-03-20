@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lector de Carpetas | Equipos</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';</script>
+    <style>
+        :root {
+            --bg-body: #f4f7f6;
+            --bg-card: #ffffff;
+            --primary: #2196F3;
+            --primary-dark: #1976D2;
+            --text-dark: #2c3e50;
+            --text-muted: #7f8c8d;
+            --border-color: #ecf0f1;
+            --tag-bg: #e3f2fd;
+            --tag-text: #1565c0;
+            --serie-bg: #f8f9fa;
+            --serie-text: #34495e;
+            --serie-border: #ced4da;
+        }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--bg-body); 
+            color: var(--text-dark); 
+            margin: 0; 
+            padding: 40px 20px;
+        }
+        .container { 
+            max-width: 1100px; 
+            margin: 0 auto; 
+            background: var(--bg-card); 
+            padding: 40px; 
+            border-radius: 16px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05); 
+        }
+        header { 
+            text-align: center; 
+            margin-bottom: 30px; 
+            border-bottom: 2px solid var(--border-color); 
+            padding-bottom: 25px; 
+        }
+        h1 { 
+            color: var(--text-dark); 
+            margin: 0; 
+            font-size: 2.3rem; 
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+        .subtitle { 
+            color: var(--text-muted); 
+            margin-top: 10px; 
+            font-size: 1.1rem; 
+        }
+        
+        .upload-section {
+            background: #ffffff;
+            border: 2px dashed var(--primary);
+            border-radius: 12px;
+            padding: 40px 20px;
+            text-align: center;
+            margin-bottom: 30px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .upload-section:hover { 
+            background: #f8fbff; 
+            border-color: var(--primary-dark);
+            transform: scale(1.01);
+        }
+        .upload-btn {
+            background: var(--primary);
+            color: white;
+            padding: 12px 28px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: background 0.2s;
+            pointer-events: none; /* Let the container handle the click */
+        }
+        .stats {
+            margin-bottom: 30px;
+            font-weight: 600;
+            color: #155724;
+            background: #d4edda;
+            display: inline-flex;
+            align-items: center;
+            padding: 12px 24px;
+            border-radius: 30px;
+            border: 1px solid #c3e6cb;
+            font-size: 1.05rem;
+        }
+        .grid-list { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); 
+            gap: 20px; 
+            padding: 0; 
+            list-style: none; 
+        }
+        .grid-list li { 
+            background: #ffffff; 
+            padding: 20px; 
+            border-radius: 12px; 
+            border: 1px solid var(--border-color); 
+            display: flex; 
+            align-items: flex-start;
+            flex-direction: column;
+            transition: all 0.25s cubic-bezier(0.165, 0.84, 0.44, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .grid-list li::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--primary);
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .grid-list li:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.08);
+            border-color: var(--primary);
+        }
+        .grid-list li:hover::before {
+            opacity: 1;
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            margin-bottom: 12px;
+        }
+        .icon { 
+            margin-right: 12px; 
+            font-size: 1.5rem; 
+        }
+        .equipo-badge {
+            background-color: var(--tag-bg);
+            color: var(--tag-text);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .serie-container {
+            display: flex;
+            align-items: center;
+            background: var(--serie-bg);
+            border: 1px solid var(--serie-border);
+            padding: 8px 12px;
+            border-radius: 8px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .serie-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-right: 8px;
+        }
+        .serie-value {
+            font-family: 'Mono', monospace;
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--serie-text);
+            letter-spacing: 0.5px;
+        }
+        .no-serie {
+            color: #e74c3c;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+        .cert-btn {
+            display: block; 
+            width: 100%; 
+            text-align: center; 
+            background: #e9ecef; 
+            color: #495057; 
+            padding: 10px; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-size: 0.85rem; 
+            font-weight: 600; 
+            border: 1px dashed #ced4da; 
+            transition: all 0.2s; 
+            box-sizing: border-box;
+            margin-top: 15px;
+        }
+        .cert-btn:hover {
+            background: #dee2e6;
+            border-color: #adb5bd;
+        }
+        .btn-clear {
+            background: var(--text-muted);
+            color: white;
+            padding: 12px 28px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            margin-top: 15px;
+            margin-left: 10px;
+            transition: background 0.2s;
+        }
+        .btn-clear:hover { background: #636e72; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📂 Lector Dinámico de Equipos</h1>
+            <p class="subtitle">Selecciona una carpeta para extraer y clasificar automáticamente sus subcarpetas.</p>
+        </header>
+
+        <!-- Zona Interactiva de Carga -->
+        <div class="upload-section" id="uploadArea">
+            <div style="font-size: 3.5rem; margin-bottom: 10px;">👇📁👆</div>
+            <h3>Haz clic aquí para seleccionar tu carpeta principal</h3>
+            <p style="color: var(--text-muted); margin-top: 5px;">Utilizando búsqueda avanzada (Soporta carpetas vacías)</p>
+            <button class="upload-btn" id="btnUpload">Elegir Carpeta</button>
+            <button class="upload-btn" id="btnExport" style="background: #28a745; margin-left: 10px; display: none; pointer-events: auto;" title="Descargar la lista completa en formato Excel">📥 Exportar Lista a Excel</button>
+            <button class="upload-btn" id="btnExtractDates" style="background: #8e44ad; margin-left: 10px; display: none; pointer-events: auto;" title="Abrir y analizar automáticamente los PDFs y Excels para detectar sus últimas fechas de calibración">🔍 Analizar Fechas y Exportar</button>
+            <button class="btn-clear" id="btnClear" title="Limpiar todos los datos guardados sobre la última carpeta leída" style="pointer-events: auto;">🗑️ Limpiar Progreso</button>
+            
+            <div style="margin-top: 20px; border-top: 1px dashed #ced4da; padding-top: 15px;">
+                <button class="upload-btn" id="btnExportBackup" style="background: #607d8b; padding: 8px 16px; font-size: 0.9rem; pointer-events: auto;" title="Descargar un archivo de respaldo con todos tus datos guardados">💾 Exportar Backup (Datos)</button>
+                <button class="upload-btn" id="btnImportBackup" style="background: #546e7a; padding: 8px 16px; font-size: 0.9rem; margin-left: 10px; pointer-events: auto;" title="Restaurar datos desde un archivo de respaldo">📂 Importar Backup</button>
+                <input type="file" id="importBackupInput" accept=".json" style="display: none;">
+            </div>
+
+            <div id="extractionProgress" style="display: none; margin-top: 15px; font-weight: bold; color: #8e44ad; background: #fdf5ff; padding: 10px; border-radius: 8px;">🔄 Extrayendo datos de los documentos (Esto puede tardar)... <span id="extractionCount">0/0</span></div>
+        </div>
+
+        <div style="text-align: center; display: none;" id="statsContainer">
+            <div class="stats" id="statsCounter">
+                📊 Total de equipos detectados: 0
+            </div>
+            <p id="rootFolderName" style="margin-top: -15px; margin-bottom: 20px; font-weight: 600; color: var(--primary-dark);"></p>
+        </div>
+
+        <div style="text-align: center; display: none; margin-bottom: 30px;" id="searchContainer">
+            <input type="text" id="searchInput" placeholder="🔍 Buscar por equipo, carpeta original o N° de serie..." 
+                   style="padding: 14px 20px; width: 100%; max-width: 550px; border-radius: 8px; border: 1px solid #ced4da; font-size: 1.05rem; outline: none; transition: all 0.2s ease; font-family: 'Inter', sans-serif; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
+        </div>
+
+        <ul class="grid-list" id="gridList">
+            <!-- Los elementos se crearán aquí dinámicamente -->
+        </ul>
+    </div>
+
+    <script>
+        // Memoria Persistente (LocalStorage)
+        const STORAGE_KEY = 'inventario_catamarca_state';
+        let appState = { rootName: '', folders: [] };
+        let attachmentsState = {}; 
+        let extDatesState = {}; // Guarda { folderName: '12/03/2024' }
+
+        function saveState() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({ appState, attachmentsState, extDatesState }));
+        }
+
+        function loadState() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    appState = parsed.appState || { rootName: '', folders: [] };
+                    attachmentsState = parsed.attachmentsState || {};
+                    extDatesState = parsed.extDatesState || {};
+                    if (appState.folders && appState.folders.length > 0) {
+                        renderList(); 
+                    }
+                } catch(e) { console.error("Error leyendo LocalStorage", e); }
+            }
+        }
+
+        // --- SISTEMAS DE LECTURA Y FECHAS ---
+        async function getAllFilesR(dirHandle) {
+            let files = [];
+            try {
+                for await (const [name, handle] of dirHandle) {
+                    if (handle.kind === 'file') {
+                        files.push(await handle.getFile());
+                    } else if (handle.kind === 'directory') {
+                        const subFiles = await getAllFilesR(handle);
+                        files = files.concat(subFiles);
+                    }
+                }
+            } catch(e) { console.warn("Aviso al leer subcarpeta:", e); }
+            return files;
+        }
+        
+        function calculateNextDate(dateStr) {
+            if (!dateStr || dateStr.includes("?") || dateStr.includes("Vacía") || dateStr.includes("Error") || dateStr.includes("detectada") || dateStr.includes("Sin Caducidad")) return null;
+            const parts = dateStr.match(/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/);
+            if (!parts) return null;
+            let day = parseInt(parts[1], 10);
+            let month = parseInt(parts[2], 10);
+            let year = parseInt(parts[3], 10);
+            if (year < 100) year += 2000;
+            year += 1; // Sumar exactamente 1 año por defecto
+            
+            return {
+                str: `${day.toString().padStart(2, '0')}/${month.toString().padStart(2, '0')}/${year}`,
+                dateObj: new Date(year, month - 1, day)
+            };
+        }
+        
+        function generateDateBlockHTML(fechaText) {
+            if (!fechaText) return '';
+            const textToLower = fechaText.toLowerCase();
+            const esInvalido = textToLower.includes("vacía") || textToLower.includes("detectada") || textToLower.includes("error");
+            const colorLabel = esInvalido ? '#721c24' : '#4a148c'; 
+            const colorData = esInvalido ? '#e74c3c' : '#7b1fa2';  
+
+            let html = `
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 2px;">
+                    <span class="serie-label" style="color: ${colorLabel}; margin:0;">📅 Calibrado:</span> 
+                    <span class="serie-value" style="color: ${colorData}; font-size: 0.95rem; margin:0;">${fechaText}</span>
+                </div>
+            `;
+            
+            if (!esInvalido) {
+                const nextData = calculateNextDate(fechaText);
+                if (nextData) {
+                    const now = new Date();
+                    now.setHours(0,0,0,0);
+                    const diffDays = Math.ceil((nextData.dateObj - now) / (1000 * 60 * 60 * 24));
+                    
+                    let nextColorLabel, nextColorData, nextIcon;
+                    if (diffDays < 0) {
+                        nextColorLabel = '#c0392b'; nextColorData = '#e74c3c'; nextIcon = '⚠️ Caducado:';
+                    } else if (diffDays <= 30) {
+                        nextColorLabel = '#d35400'; nextColorData = '#e67e22'; nextIcon = '⏳ Para este mes:';
+                    } else {
+                        nextColorLabel = '#27ae60'; nextColorData = '#27ae60'; nextIcon = '✅ Próximo:';
+                    }
+
+                    html += `
+                        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; border-top: 1px dashed #e3cbf1; padding-top: 5px; margin-top: 3px;">
+                            <span class="serie-label" style="color: ${nextColorLabel}; margin:0;">${nextIcon}</span> 
+                            <span class="serie-value" style="color: ${nextColorData}; font-size: 0.95rem; font-weight: 800; margin:0;">${nextData.str}</span>
+                        </div>
+                    `;
+                }
+            }
+            return html;
+        }
+
+        // Limpiar progreso y recargar
+        document.getElementById('btnClear').addEventListener('click', function(e) {
+            e.stopPropagation(); // Evitar click en uploadArea
+            if(confirm("¿Estás seguro de que deseas borrar el progreso actual de esta página?")) {
+                localStorage.removeItem(STORAGE_KEY);
+                location.reload();
+            }
+        });
+
+        // Evento principal usando API Moderna para detectar subcarpetas incluso si están vacías
+        document.getElementById('uploadArea').addEventListener('click', async function(e) {
+            if(e.target.id === 'btnClear') return; // Ignorar si dio clic en limpiar
+            
+            try {
+                // Esta api lee la estructura directamente del disco, ¡sin ignorar vaciás!
+                const dirHandle = await window.showDirectoryPicker();
+                window.currentDirHandle = dirHandle; // Guardado en memoria temporal para poder usar el análisis posterior
+                
+                const folderSet = new Set();
+                
+                // Iterar sobre las carpetas directas (primer nivel)
+                for await (const entry of dirHandle.values()) {
+                    if (entry.kind === 'directory') {
+                        folderSet.add(entry.name);
+                    }
+                }
+                
+                const foundFolders = Array.from(folderSet).sort();
+                
+                if (foundFolders.length === 0) {
+                    alert("La carpeta seleccionada no tiene subcarpetas.");
+                    return;
+                }
+
+                appState.folders = foundFolders;
+                appState.rootName = dirHandle.name;
+                
+                // Opcional: limpiar adjuntos si cambiamos de rubro/carpeta
+                saveState();
+                renderList();
+                
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    console.error("Error al leer la carpeta:", err);
+                    alert("Tu navegador no soporta la lectura avanzada de carpetas, o ocurrió un error al dar permisos.");
+                }
+            }
+        });
+
+        // Constructor principal de las UI Cards 
+        function renderList() {
+            const folders = appState.folders;
+            window.totalEquiposDetectados = folders.length;
+
+            document.getElementById('statsContainer').style.display = 'block';
+            document.getElementById('searchContainer').style.display = 'block';
+            document.getElementById('btnExport').style.display = 'inline-block';
+            document.getElementById('btnExtractDates').style.display = 'inline-block';
+            document.getElementById('searchInput').value = ''; 
+            document.getElementById('statsCounter').innerText = `📊 Total de equipos detectados: ${folders.length}`;
+            document.getElementById('rootFolderName').innerText = `Carpeta leída: "${appState.rootName}"`;
+            
+            const gridList = document.getElementById('gridList');
+            gridList.innerHTML = ''; 
+            
+            folders.forEach(folderName => {
+                let equipo = folderName;
+                let serie = '';
+                let hasSerie = false;
+                
+                const lastHyphenIndex = folderName.lastIndexOf('-');
+                if (lastHyphenIndex !== -1) {
+                    const testSerie = folderName.substring(lastHyphenIndex + 1);
+                    if (/\d/.test(testSerie)) {
+                        equipo = folderName.substring(0, lastHyphenIndex);
+                        serie = testSerie;
+                        hasSerie = true;
+                    }
+                }
+                
+                if (!hasSerie) {
+                    const match = folderName.match(/^(.*?)(\d[A-Z0-9]*)$/i);
+                    if (match && !folderName.includes(' - ')) {
+                        equipo = match[1].replace(/-$/, '').trim();
+                        serie = match[2];
+                        hasSerie = true;
+                    }
+                }
+                
+                const li = document.createElement('li');
+                const mainStatusId = 'badge_' + Math.random().toString(36).substr(2, 9);
+                const uniqueId = 'cert_' + Math.random().toString(36).substr(2, 9);
+                
+                const savedAttachments = attachmentsState[folderName] || [];
+                const isSaved = savedAttachments.length > 0;
+
+                const headerDiv = document.createElement('div');
+                headerDiv.className = 'card-header';
+                headerDiv.style.justifyContent = 'space-between';
+                
+                headerDiv.innerHTML = `
+                    <div><span class="icon">📁</span> <span class="equipo-badge">${equipo}</span></div>
+                    <div id="${mainStatusId}" style="font-size: 1.3rem; transition: all 0.3s; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1)); cursor: help;" 
+                         title="${isSaved ? 'Certificados adjuntos y guardados' : 'Sin certificado adjunto'}">
+                         ${isSaved ? '✅' : '❌'}
+                    </div>
+                `;
+                li.appendChild(headerDiv);
+                
+                const originalNameDiv = document.createElement('div');
+                originalNameDiv.style.fontSize = '0.85rem';
+                originalNameDiv.style.color = '#7f8c8d';
+                originalNameDiv.style.marginBottom = '12px';
+                originalNameDiv.style.wordBreak = 'break-all';
+                originalNameDiv.innerHTML = `Nombre Original: <strong>${folderName}</strong>`;
+                li.appendChild(originalNameDiv);
+                
+                const serieContainer = document.createElement('div');
+                serieContainer.className = 'serie-container';
+                if (hasSerie) {
+                    serieContainer.innerHTML = `
+                        <span class="serie-label">N° Serie:</span> 
+                        <span class="serie-value">${serie}</span>
+                    `;
+                } else {
+                    serieContainer.innerHTML = `<span class="serie-value no-serie">Sin Número de Serie</span>`;
+                }
+                li.appendChild(serieContainer);
+                
+                // --- Contenedor Dinámico para Fecha Extraída ---
+                const fechaText = extDatesState[folderName] || "";
+                const dateContainer = document.createElement('div');
+                dateContainer.className = 'serie-container';
+                dateContainer.style.marginTop = '10px';
+                dateContainer.style.background = '#fef5ff'; // Fondo levemente púrpura orgánico
+                dateContainer.style.borderColor = '#e3cbf1';
+                dateContainer.style.flexDirection = 'column'; // Lo ponemos vertical para apilar Calibración y Vencimiento
+                dateContainer.style.alignItems = 'flex-start';
+                dateContainer.id = "date_container_" + folderName.replace(/[^\w]/g, '_');
+                
+                if (fechaText) {
+                    dateContainer.innerHTML = generateDateBlockHTML(fechaText);
+                    dateContainer.style.display = 'flex';
+                } else {
+                    dateContainer.style.display = 'none';
+                }
+                li.appendChild(dateContainer);
+                
+                let lblBg = isSaved ? '#d4edda' : '';
+                let lblBorder = isSaved ? '#28a745' : '';
+                let lblColor = isSaved ? '#155724' : '';
+                let lblText = isSaved ? '✅ Recuperado de Memoria' : '📎 Adjuntar Certificados';
+                let displayStatus = isSaved ? 'block' : 'none';
+                let docText = isSaved ? `📄 ${savedAttachments.length === 1 ? savedAttachments[0] : savedAttachments.length + ' archivos guardados'}` : '';
+
+                const certContainer = document.createElement('div');
+                certContainer.style.width = '100%';
+                certContainer.innerHTML = `
+                    <button class="cert-btn" id="btn_attach_${uniqueId}" style="width: 100%; padding: 10px; font-size: 0.9rem; cursor: pointer; border-radius: 8px; font-weight: 500; ${isSaved ? `background: ${lblBg}; border-color: ${lblBorder}; color: ${lblColor};` : ''}">
+                        ${lblText}
+                    </button>
+                    <input type="file" id="${uniqueId}" accept=".pdf,.doc,.docx,.xlsx,.xls,image/*" multiple style="display: none;">
+                    <div id="status_${uniqueId}" style="margin-top: 8px; font-size: 0.75rem; color: #28a745; font-weight: 600; text-align: center; word-break: break-all; display: ${displayStatus};">${docText}</div>
+                    
+                    <button class="upload-btn" id="btn_view_${uniqueId}" style="margin-top: 10px; width: 100%; background: #17a2b8; padding: 10px; font-size: 0.85rem; display: ${isSaved ? 'block' : 'none'}; border-radius: 8px;">
+                        👁️ Ver / Descargar
+                    </button>
+                `;
+                li.appendChild(certContainer);
+
+                gridList.appendChild(li);
+
+                setTimeout(() => {
+                    const fileInput = document.getElementById(uniqueId);
+                    const btnAttach = document.getElementById('btn_attach_' + uniqueId);
+                    const statusText = document.getElementById('status_' + uniqueId);
+                    const mainBadge = document.getElementById(mainStatusId);
+                    const btnView = document.getElementById('btn_view_' + uniqueId);
+                    
+                    // LÓGICA BOTÓN VER / DESCARGAR
+                    btnView.addEventListener('click', async function(e) {
+                        e.preventDefault();
+                        let targetFile = null;
+                        
+                        // Prioridad 1: Archivo recién subido a mano
+                        if (fileInput.files && fileInput.files.length > 0) {
+                            targetFile = fileInput.files[0];
+                        } 
+                        // Prioridad 2: Buscar físicamente en el disco si el usuario dio permisos (Folder API)
+                        else if (window.currentDirHandle) {
+                            try {
+                                const subDirHandle = await window.currentDirHandle.getDirectoryHandle(folderName);
+                                const filesInside = await getAllFilesR(subDirHandle);
+                                
+                                if (filesInside.length > 0) {
+                                    filesInside.sort((a, b) => {
+                                        const matchA = a.name.match(/(20\d{2})(?:\s*-\s*(\d{1,2}))?/);
+                                        const matchB = b.name.match(/(20\d{2})(?:\s*-\s*(\d{1,2}))?/);
+                                        const scoreA = matchA ? (parseInt(matchA[1]) * 100 + parseInt(matchA[2] || 0)) : 0;
+                                        const scoreB = matchB ? (parseInt(matchB[1]) * 100 + parseInt(matchB[2] || 0)) : 0;
+                                        if (scoreA !== scoreB) return scoreB - scoreA;
+                                        return b.lastModified - a.lastModified;
+                                    });
+                                    targetFile = filesInside[0]; // El más nuevo
+                                }
+                            } catch(err) { console.warn("No se pudo leer la carpeta", err); }
+                        }
+                        
+                        if (targetFile) {
+                            const url = URL.createObjectURL(targetFile);
+                            if(targetFile.name.toLowerCase().endsWith('.pdf')) {
+                                window.open(url, '_blank'); // Abrir PDF en pestaña
+                            } else {
+                                const link = document.createElement('a'); // Descargar Excel
+                                link.href = url;
+                                link.download = targetFile.name;
+                                link.click();
+                            }
+                            setTimeout(() => URL.revokeObjectURL(url), 15000);
+                        } else {
+                            alert("⚠️ El archivo está desconectado temporalmente de la memoria.\n\nPara poder visualizarlo, debes volver a dar permisos al navegador:\n\n1. Haz clic en el botón [Elegir Carpeta] arriba.\n2. Selecciona la misma carpeta principal.\n\n¡O adjúntalo manualmente de forma individual!");
+                        }
+                    });
+
+                    let attachedFiles = []; 
+                    
+                    // Novedad: Interceptar clic para forzar que el explorador de archivos empiece en la ruta del equipo
+                    btnAttach.addEventListener('click', async function(ev) {
+                        ev.preventDefault();
+                        if (window.showOpenFilePicker && window.currentDirHandle) {
+                            try {
+                                let subDirHandle;
+                                try { subDirHandle = await window.currentDirHandle.getDirectoryHandle(folderName); } catch(e){}
+                                
+                                const opts = { 
+                                    id: uniqueId, // FUNDAMENTAL: Evita que Chrome recuerde la última carpeta visitada globalmente y nos ignore
+                                    multiple: true 
+                                };
+                                if (subDirHandle) opts.startIn = subDirHandle;
+                                
+                                const fileHandles = await window.showOpenFilePicker(opts);
+                                const dt = new DataTransfer();
+                                for (const handle of fileHandles) {
+                                    dt.items.add(await handle.getFile());
+                                }
+                                fileInput.files = dt.files;
+                                fileInput.dispatchEvent(new Event('change'));
+                            } catch(err) {
+                                if (err.name !== 'AbortError') fileInput.click();
+                            }
+                        } else {
+                            fileInput.click(); // Comportamiento normal si no hay permisos base autorizados
+                        }
+                    });
+
+                    fileInput.addEventListener('change', async function(ev) {
+                        if (this.files && this.files.length > 0) {
+                            attachedFiles = Array.from(this.files);
+                            
+                            btnAttach.style.background = '#d4edda';
+                            btnAttach.style.borderColor = '#28a745';
+                            btnAttach.style.color = '#155724';
+                            btnAttach.innerHTML = '✅ Listo';
+                            
+                            statusText.style.display = 'block';
+                            statusText.innerHTML = `📄 ${this.files.length === 1 ? this.files[0].name : this.files.length + ' archivos adjuntos'}`;
+                            
+                            btnView.style.display = 'block'; // Mostrar botón Ver
+                            
+                            if (mainBadge) {
+                                mainBadge.innerHTML = '✅';
+                                mainBadge.title = "Certificados adjuntos correctamente";
+                            }
+
+                            attachmentsState[folderName] = attachedFiles.map(f => f.name);
+                            saveState();
+
+                            // NUEVO: EXTRAER FECHA DEL CERTIFICADO MANUAL AL INSTANTE
+                            const fileToAnalyze = this.files[0]; // Usar el primero que adjuntó
+                            const cardDateContainer = document.getElementById("date_container_" + folderName.replace(/[^\w]/g, '_'));
+                            
+                            // Mostrar mensaje de carga
+                            if (cardDateContainer) {
+                                cardDateContainer.innerHTML = `<span class="serie-label" style="color: #4a148c;">⏳ Analizando documento...</span>`;
+                                cardDateContainer.style.display = 'flex';
+                            }
+                            
+                            const extractedDate = await analyzeFileDates(fileToAnalyze, folderName);
+                            
+                            // Actualizar base de datos y UI
+                            if (extractedDate) {
+                                extDatesState[folderName] = extractedDate;
+                            } else {
+                                delete extDatesState[folderName]; // Que quede correctamente limpio interno
+                            }
+                            saveState();
+                            
+                            if (cardDateContainer) {
+                                if (extractedDate) {
+                                    cardDateContainer.innerHTML = generateDateBlockHTML(extractedDate);
+                                    cardDateContainer.style.display = 'flex';
+                                } else {
+                                    cardDateContainer.innerHTML = `
+                                        <span class="serie-label" style="color: #721c24;">⚠️ Aviso:</span> 
+                                        <span class="serie-value" style="color: #e74c3c; font-size: 0.85rem;">No se detectó fecha en el texto (¿Es una imagen/escáner?)</span>
+                                    `;
+                                    cardDateContainer.style.display = 'flex';
+                                    
+                                    // Ocultar la advertencia después de 5 segundos para mantenerlo limpio
+                                    setTimeout(() => {
+                                        cardDateContainer.style.display = 'none';
+                                    }, 5500);
+                                }
+                            }
+
+                        } else {
+                            if (attachedFiles.length > 0) {
+                                const dt = new DataTransfer();
+                                attachedFiles.forEach(f => dt.items.add(f));
+                                this.files = dt.files;
+                            } else {
+                                btnAttach.style.background = '';
+                                btnAttach.style.borderColor = '';
+                                btnAttach.style.color = '';
+                                btnAttach.innerHTML = '📎 Adjuntar Certificados';
+                                statusText.style.display = 'none';
+                                
+                                if (mainBadge) {
+                                    mainBadge.innerHTML = '❌';
+                                    mainBadge.title = "Sin certificado adjunto";
+                                }
+
+                                delete attachmentsState[folderName];
+                                delete extDatesState[folderName];
+                                saveState();
+                                
+                                const cardDateContainer = document.getElementById("date_container_" + folderName.replace(/[^\w]/g, '_'));
+                                if (cardDateContainer) cardDateContainer.style.display = 'none';
+                            }
+                        }
+                    });
+                }, 0);
+            });
+        }
+
+        // Buscador de autocompletado
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            const filterTerm = e.target.value.toLowerCase();
+            const listItems = document.querySelectorAll('#gridList li');
+            let visibleCount = 0;
+            
+            listItems.forEach(item => {
+                const cardText = item.innerText.toLowerCase();
+                if (cardText.includes(filterTerm)) {
+                    item.style.display = 'flex';
+                    visibleCount++;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+            
+            const total = window.totalEquiposDetectados || 0;
+            document.getElementById('statsCounter').innerText = 
+                filterTerm.trim() === '' 
+                    ? `📊 Total de equipos detectados: ${total}` 
+                    : `🔍 Buscando: Mostrando ${visibleCount} de ${total} resultados`;
+        });
+
+        // Exportar la lista a Excel (.xlsx) con ESTILOS PROFESIONALES
+        document.getElementById('btnExport').addEventListener('click', async function(e) {
+            e.stopPropagation(); // Evitar abrir selector
+            if (!appState.folders || appState.folders.length === 0) return;
+            
+            // Usamos ExcelJS en lugar de SheetJS para poder dar formato avanzado
+            const workbook = new ExcelJS.Workbook();
+            workbook.creator = 'Mondis V2';
+            workbook.created = new Date();
+            
+            const worksheet = workbook.addWorksheet('Inventario_Equipos');
+            
+            // 1. Configurar las Columnas
+            worksheet.columns = [
+                { header: 'Equipo', key: 'tipo', width: 25 },
+                { header: 'N° Serie', key: 'serie', width: 25 }
+            ];
+            
+            // 2. Estilo a la fila del Encabezado (Azul oscuro, letras blancas)
+            const headerRow = worksheet.getRow(1);
+            headerRow.height = 30; // Más alta
+            headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 12 };
+            headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+            
+            headerRow.eachCell((cell) => {
+                cell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: 'FF1976D2' } // Color primary-dark
+                };
+                cell.border = {
+                    top: {style: 'medium', color: {argb: 'FF000000'}},
+                    left: {style: 'medium', color: {argb: 'FF000000'}},
+                    bottom: {style: 'medium', color: {argb: 'FF000000'}},
+                    right: {style: 'medium', color: {argb: 'FF000000'}}
+                };
+            });
+            
+            // 3. Insertar Datos de Cada Equipo
+            appState.folders.forEach(folderName => {
+                let equipo = folderName;
+                let serie = '';
+                
+                const lastHyphenIndex = folderName.lastIndexOf('-');
+                if (lastHyphenIndex !== -1) {
+                    const testSerie = folderName.substring(lastHyphenIndex + 1);
+                    if (/\d/.test(testSerie)) {
+                        equipo = folderName.substring(0, lastHyphenIndex);
+                        serie = testSerie;
+                    }
+                }
+                
+                if (!serie) {
+                    const match = folderName.match(/^(.*?)(\d[A-Z0-9]*)$/i);
+                    if (match && !folderName.includes(' - ')) {
+                        equipo = match[1].replace(/-$/, '').trim();
+                        serie = match[2];
+                    }
+                }
+                
+                // Agregamos la fila a la tabla (Sólo Equipo y Serie)
+                const rowObj = worksheet.addRow({
+                    tipo: folderName, // Usamos folderName en lugar de 'equipo' para incluir "AGI-828" completo
+                    serie: serie || "N/A"
+                });
+                
+                // 4. Aplicar estilos a las filas de datos
+                rowObj.height = 25; // Altura para mejor visualización
+                
+                rowObj.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+                    // Bordes gris claro para todo
+                    cell.border = {
+                        top: {style: 'thin', color: {argb: 'FFCCCCCC'}},
+                        left: {style: 'thin', color: {argb: 'FFCCCCCC'}},
+                        bottom: {style: 'thin', color: {argb: 'FFCCCCCC'}},
+                        right: {style: 'thin', color: {argb: 'FFCCCCCC'}}
+                    };
+                    
+                    if (colNumber === 2) { // Columna N° Serie
+                        cell.font = { bold: true };
+                        cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+                    } else { // Columna Equipo
+                        cell.alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
+                    }
+                });
+            });
+            
+            // 5. Aplicar Filtro Automático a la primera fila (A1 a B1)
+            worksheet.autoFilter = 'A1:B1';
+            
+            // Generar archivo binario y forzar descarga (Magia de Javascript)
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+            
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            
+            const cleanRoot = (appState.rootName || 'Catamarca').replace(/[^\w-]/g, '_');
+            let suggestedName = `Inventario_${cleanRoot}`;
+            
+            // Permitir renombrar
+            let customName = prompt("Ingresa el nombre con el que deseas guardar el archivo Excel:", suggestedName);
+            
+            if (customName === null) {
+                return; // Si el usuario da "Cancelar", detenemos la descarga
+            }
+            
+            customName = customName.trim() || suggestedName;
+            if (!customName.toLowerCase().endsWith('.xlsx')) {
+                customName += '.xlsx';
+            }
+            
+            link.download = customName;
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+
+        // --- MOTOR DE EXTRACCIÓN AVANZADA DE FECHAS (Lector PDF/Excel interno) ---
+        async function analyzeFileDates(file, folderName = "") {
+            try {
+                // EXCEPCIÓN ESPECIAL: Estaciones de Agua y Pretratamientos (No caducan, fecha en el título)
+                const fNameUpper = folderName.toUpperCase();
+                if (fNameUpper.startsWith("EST-") || fNameUpper.startsWith("PRETRATAMIENTO")) {
+                    const match = file.name.match(/(\d{4})\s*-\s*(\d{1,2})/);
+                    if (match) {
+                        const year = match[1];
+                        const month = match[2].padStart(2, '0');
+                        return `${month}/${year} (Sin Caducidad)`;
+                    }
+                }
+
+                // EXCEPCIÓN ESPECIAL 2: Micro-equipos (Solo llevan el año desde el título)
+                if (fNameUpper.startsWith("MIC")) {
+                    const matchY = file.name.match(/(20\d{2})/);
+                    if (matchY) {
+                        return matchY[1]; // Retorna ej: "2024"
+                    }
+                }
+
+                if (file.name.toLowerCase().endsWith('.pdf')) {
+                    const buf = await file.arrayBuffer();
+                    const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+                    let fullText = '';
+                    const pagesToRead = Math.min(pdf.numPages, 3); // Leemos las 3 primeras páginas máximo por rapidez
+                    
+                    for(let i = 1; i <= pagesToRead; i++) {
+                        const page = await pdf.getPage(i);
+                        const textContent = await page.getTextContent();
+                        fullText += textContent.items.map(item => item.str).join(' ') + '\n';
+                    }
+                    
+                    // Regex flexible para encontrar "Fechas" en PDFs generados desde tablas Excel donde pdf.js desordena las columnas y pone basura entremedio
+                    const dateMatch = fullText.match(/(?:calibraci[oó]n|mantenimiento|fecha|calibrado(?:\s+el)?)(?:[^\d]{1,100}?)(\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4})\b/i);
+                    if (dateMatch) return dateMatch[1];
+
+                    // Fallback rápido (cualquier fecha genérica en formato DD/MM/YYYY)
+                    const anyDateMatch = fullText.match(/\b(\d{2}[\/\-]\d{2}[\/\-]\d{4})\b/);
+                    if (anyDateMatch) return `${anyDateMatch[1]}`;
+                    
+                    // Fallback texto completo (ej: 12 de marzo de 2024)
+                    const textDateMatch = fullText.match(/\b(\d{1,2})\s*de\s*(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)\s*de\s*(\d{4})\b/i);
+                    if (textDateMatch) {
+                        const mMap = {enero:'01', febrero:'02', marzo:'03', abril:'04', mayo:'05', junio:'06', julio:'07', agosto:'08', septiembre:'09', octubre:'10', noviembre:'11', diciembre:'12'};
+                        const d = textDateMatch[1].padStart(2, '0');
+                        const m = mMap[textDateMatch[2].toLowerCase()];
+                        const yy = textDateMatch[3];
+                        return `${d}/${m}/${yy}`;
+                    }
+
+                    // Fallback texto corto (ej: 12-Ago-2024 o 12/ago/24)
+                    const shortTextDateMatch = fullText.match(/\b(\d{1,2})[\/\-\s]+(ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic)[a-z]*[\/\-\s]+(\d{2,4})\b/i);
+                    if (shortTextDateMatch) {
+                        const mMap = {ene:'01', feb:'02', mar:'03', abr:'04', may:'05', jun:'06', jul:'07', ago:'08', sep:'09', oct:'10', nov:'11', dic:'12'};
+                        const d = shortTextDateMatch[1].padStart(2, '0');
+                        const m = mMap[shortTextDateMatch[2].toLowerCase()];
+                        let yy = shortTextDateMatch[3];
+                        if (yy.length === 2) yy = "20" + yy;
+                        return `${d}/${m}/${yy}`;
+                    }
+                    
+                    return "";
+                } else if (file.name.toLowerCase().match(/\.xlsx?$/)) {
+                    // Lector de fechas dentro de Excel usando ExcelJS
+                    const buf = await file.arrayBuffer();
+                    const wb = new ExcelJS.Workbook();
+                    await wb.xlsx.load(buf);
+                    const ws = wb.worksheets[0];
+                    let dateFound = null;
+                    
+                    ws.eachRow((row) => {
+                        if (dateFound) return;
+                        row.eachCell((cell, colN) => {
+                            if (dateFound) return;
+                            const val = cell.value ? cell.value.toString().toLowerCase() : "";
+                            
+                            // Buscar "fecha" pero evitando fechas de emisión/impresión de encabezados
+                            if (val.includes('fecha') && !val.includes('emisión') && !val.includes('impresión')) {
+                                // Buscar exhaustivamente en las siguientes 5 celdas de la tabla
+                                for(let offset = 1; offset <= 5; offset++) {
+                                    const nextCell = row.getCell(colN + offset);
+                                    if (nextCell && nextCell.value) {
+                                        if (nextCell.value instanceof Date) {
+                                            dateFound = nextCell.value.toLocaleDateString();
+                                            break;
+                                        } else {
+                                            const dtMatch = nextCell.value.toString().match(/\b(\d{2}[\/\-]\d{2}[\/\-]\d{2,4})\b/);
+                                            if (dtMatch) {
+                                                dateFound = dtMatch[1];
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    });
+                    return dateFound || "";
+                }
+                return "";
+            } catch(e) {
+                console.error(`Error procesando ${file.name}:`, e);
+                return "";
+            }
+        }
+
+        document.getElementById('btnExtractDates').addEventListener('click', async function(e) {
+            e.stopPropagation();
+            
+            if (!window.currentDirHandle || appState.folders.length === 0) {
+                alert("Por seguridad del navegador, para hacer esta acción masiva profunda, debes hacer clic en 'Elegir Carpeta' para volver autorizar la carpeta en esta sesión.");
+                return;
+            }
+            
+            const progressDiv = document.getElementById('extractionProgress');
+            const countSpan = document.getElementById('extractionCount');
+            progressDiv.style.display = 'block';
+            let processed = 0;
+            
+            const extractionData = [];
+            
+            for (const folderName of appState.folders) {
+                let equipo = folderName;
+                let serie = '';
+                
+                const lastHyphenIndex = folderName.lastIndexOf('-');
+                if (lastHyphenIndex !== -1) {
+                    const testSerie = folderName.substring(lastHyphenIndex + 1);
+                    if (/\d/.test(testSerie)) {
+                        equipo = folderName.substring(0, lastHyphenIndex);
+                        serie = testSerie;
+                    }
+                }
+                if (!serie) {
+                    const match = folderName.match(/^(.*?)(\d[A-Z0-9]*)$/i);
+                    if (match && !folderName.includes(' - ')) {
+                        equipo = match[1].replace(/-$/, '').trim();
+                        serie = match[2];
+                    }
+                }
+                
+                let fecha = "";
+                let bestFilename = "-";
+                
+                try {
+                    const subDirHandle = await window.currentDirHandle.getDirectoryHandle(folderName);
+                    const filesInside = await getAllFilesR(subDirHandle);
+                    
+                    if (filesInside.length > 0) {
+                        // Ordenar para encontrar el "último" por año/mes en el titulo, luego por modificacion
+                        filesInside.sort((a, b) => {
+                            const matchA = a.name.match(/(20\d{2})(?:\s*-\s*(\d{1,2}))?/);
+                            const matchB = b.name.match(/(20\d{2})(?:\s*-\s*(\d{1,2}))?/);
+                            const scoreA = matchA ? (parseInt(matchA[1]) * 100 + parseInt(matchA[2] || 0)) : 0;
+                            const scoreB = matchB ? (parseInt(matchB[1]) * 100 + parseInt(matchB[2] || 0)) : 0;
+                            if (scoreA !== scoreB) return scoreB - scoreA;
+                            return b.lastModified - a.lastModified;
+                        });
+                        
+                        const bestFile = filesInside[0];
+                        bestFilename = bestFile.name;
+                        fecha = await analyzeFileDates(bestFile, folderName);
+                    }
+                } catch(e) {
+                    fecha = "";
+                }
+                
+                // >>> ACTUALIZAR INTERFAZ Y LOCALSTORAGE AL INSTANTE <<<
+                extDatesState[folderName] = fecha;
+                saveState();
+                
+                const cardDateContainer = document.getElementById("date_container_" + folderName.replace(/[^\w]/g, '_'));
+                if (cardDateContainer) {
+                    if (fecha) {
+                        cardDateContainer.innerHTML = generateDateBlockHTML(fecha);
+                        cardDateContainer.style.display = 'flex';
+                    } else {
+                        cardDateContainer.style.display = 'none';
+                    }
+                }
+                
+                extractionData.push({
+                    "Equipo": folderName,
+                    "N° Serie": serie || "N/A",
+                    "Último Documento Utilizado": bestFilename,
+                    "Fecha de Calib. o Mant. Extraída": fecha || "-"
+                });
+                
+                processed++;
+                countSpan.innerText = `${processed}/${appState.folders.length}`;
+            }
+            
+            progressDiv.innerText = "✅ ¡Análisis masivo Finalizado! Generando su Excel...";
+            
+            setTimeout(async () => {
+                // Exportar el resultado de la extracción
+                const wb = new ExcelJS.Workbook();
+                wb.creator = 'Analizador Inteligente Mondis';
+                const ws = wb.addWorksheet('Fechas Extraídas');
+                
+                ws.columns = [
+                    { header: 'Equipo', key: 'equipo', width: 25 },
+                    { header: 'N° Serie', key: 'serie', width: 25 },
+                    { header: 'Último Documento Utilizado', key: 'archivo', width: 45 },
+                    { header: '✅ Calibrado / Mant.', key: 'fecha', width: 25 },
+                    { header: '⏳ Vencimiento (1 Año)', key: 'vencimiento', width: 25 }
+                ];
+                
+                // Estilo Header (Púrpura Profundo)
+                const hr = ws.getRow(1);
+                hr.height = 30;
+                hr.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 12 };
+                hr.eachCell(cell => {
+                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF673AB7' } }; // Púrpura morado
+                    cell.border = { top:{style:'medium'}, left:{style:'medium'}, bottom:{style:'medium'}, right:{style:'medium'}};
+                    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+                });
+                
+                extractionData.forEach(row => {
+                    const nx = calculateNextDate(row["Fecha de Calib. o Mant. Extraída"]);
+                    const nextDateStr = nx ? nx.str : "-";
+
+                    const r = ws.addRow({ equipo: row["Equipo"], serie: row["N° Serie"], archivo: row["Último Documento Utilizado"], fecha: row["Fecha de Calib. o Mant. Extraída"], vencimiento: nextDateStr });
+                    r.height = 25;
+                    
+                    r.eachCell((c, colN) => {
+                        c.border = { top:{style:'thin', color:{argb:'FFCCCCCC'}}, left:{style:'thin', color:{argb:'FFCCCCCC'}}, bottom:{style:'thin', color:{argb:'FFCCCCCC'}}, right:{style:'thin', color:{argb:'FFCCCCCC'}}};
+                        c.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+                        
+                        if (colN === 2) {
+                            c.font = { bold: true };
+                            c.alignment = { horizontal: 'center', vertical: 'middle' };
+                        }
+                        if (colN === 4 || colN === 5) { // Columna de Fechas
+                            c.alignment = { horizontal: 'center', vertical: 'middle' };
+                            
+                            // Colorización Fecha Original
+                            if (colN === 4 && row["Fecha de Calib. o Mant. Extraída"] !== "-" && row["Fecha de Calib. o Mant. Extraída"] !== "") {
+                                c.font = { color: { argb: 'FF155724' }, bold: true }; 
+                                c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD4EDDA' } };
+                            }
+                            
+                            // Colorización Vencimiento
+                            if (colN === 5 && nextDateStr !== "-") {
+                                const diffDays = Math.ceil((nx.dateObj - new Date()) / (1000 * 60 * 60 * 24));
+                                if (diffDays < 0) { // Caducado
+                                    c.font = { color: { argb: 'FF721C24' }, bold: true };
+                                    c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8D7DA' } };
+                                } else if (diffDays <= 30) { // Pronto
+                                    c.font = { color: { argb: 'FF8A6D3B' }, bold: true };
+                                    c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFCF8E3' } }; // Amarillo pastel
+                                } else { // Ok
+                                    c.font = { color: { argb: 'FF155724' }, bold: true }; 
+                                    c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD4EDDA' } };
+                                }
+                            }
+                        }
+                    });
+                });
+                
+                ws.autoFilter = 'A1:E1';
+                const buf = await wb.xlsx.writeBuffer();
+                const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(blob);
+                
+                const cleanRoot = (appState.rootName || 'Catamarca').replace(/[^\w-]/g, '_');
+                link.download = `Análisis_de_Fechas_${cleanRoot}.xlsx`;
+                
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                // Restauramos el mensaje original después de 3 segundos
+                setTimeout(() => {
+                    progressDiv.style.display = 'none';
+                    progressDiv.innerHTML = '🔄 Extrayendo datos de los documentos (Esto puede tardar)... <span id="extractionCount">0/0</span>';
+                }, 3500);
+
+            }, 500); // Dar un respiro a la UI para mostrar que finalizó
+        });
+
+        // --- SISTEMA DE BACKUP ---
+        document.getElementById('btnExportBackup').addEventListener('click', function(e) {
+            e.stopPropagation();
+            const savedData = localStorage.getItem(STORAGE_KEY);
+            if (!savedData || !appState.folders || appState.folders.length === 0) {
+                alert("No hay datos cargados en pantalla para exportar. ¡Carga una carpeta primero!");
+                return;
+            }
+            
+            const blob = new Blob([savedData], { type: "application/json" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            
+            const cleanRoot = (appState.rootName || 'Catamarca').replace(/[^\w-]/g, '_');
+            const dateStr = new Date().toISOString().split('T')[0];
+            link.download = `Mondis_Backup_${cleanRoot}_${dateStr}.json`;
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+
+        document.getElementById('btnImportBackup').addEventListener('click', function(e) {
+            e.stopPropagation();
+            document.getElementById('importBackupInput').click();
+        });
+
+        document.getElementById('importBackupInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    const contents = evt.target.result;
+                    const parsed = JSON.parse(contents); // Validar que sea un JSON íntegro
+                    
+                    if (!parsed.appState || !parsed.appState.folders) {
+                        throw new Error("El archivo no tiene el formato correcto de Mondis");
+                    }
+                    
+                    if (confirm("¿Estás seguro que deseas sobreescribir tus datos actuales con este Backup?")) {
+                        localStorage.setItem(STORAGE_KEY, contents);
+                        alert("¡Backup restaurado con éxito! La página se recargará para mostrar los datos.");
+                        location.reload();
+                    }
+                } catch(err) {
+                    alert("Error al leer el backup. Asegúrate de que sea un archivo original (.json)");
+                    console.error(err);
+                }
+                e.target.value = ""; // Resetear selector
+            };
+            reader.readAsText(file);
+        });
+
+        loadState();
+    </script>
+</body>
+</html>
